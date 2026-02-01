@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Target, TrendingUp, Calendar, Tags } from 'lucide-react';
+import { DateRange } from 'react-day-picker';
 import { ImpactEntry, ImpactTag as ImpactTagType } from '@/types/impact';
 import { Header } from '@/components/Header';
 import { ImpactCard } from '@/components/ImpactCard';
@@ -8,6 +9,7 @@ import { AddImpactForm } from '@/components/AddImpactForm';
 import { StatsCard } from '@/components/StatsCard';
 import { EmptyState } from '@/components/EmptyState';
 import { GenerateNarrativeModal } from '@/components/GenerateNarrativeModal';
+import { FilterBar } from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 
 // Sample data to showcase the app
@@ -48,6 +50,56 @@ const Index = () => {
   const [entries, setEntries] = useState<ImpactEntry[]>(sampleEntries);
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [isNarrativeModalOpen, setIsNarrativeModalOpen] = useState(false);
+  
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<ImpactTagType[]>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+  const hasActiveFilters = searchQuery.length > 0 || selectedTags.length > 0 || !!dateRange?.from;
+
+  const handleTagToggle = (tag: ImpactTagType) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedTags([]);
+    setDateRange(undefined);
+  };
+
+  // Filter entries
+  const filteredEntries = useMemo(() => {
+    return entries.filter(entry => {
+      // Keyword search
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesKeyword =
+          entry.whatYouDid.toLowerCase().includes(query) ||
+          entry.whoBenefited.toLowerCase().includes(query) ||
+          entry.problemSolved.toLowerCase().includes(query) ||
+          entry.evidence.toLowerCase().includes(query);
+        if (!matchesKeyword) return false;
+      }
+
+      // Tag filter
+      if (selectedTags.length > 0) {
+        const hasMatchingTag = selectedTags.some(tag => entry.tags.includes(tag));
+        if (!hasMatchingTag) return false;
+      }
+
+      // Date range filter
+      if (dateRange?.from) {
+        const entryDate = new Date(entry.weekOf);
+        if (entryDate < dateRange.from) return false;
+        if (dateRange.to && entryDate > dateRange.to) return false;
+      }
+
+      return true;
+    });
+  }, [entries, searchQuery, selectedTags, dateRange]);
 
   const handleAddEntry = (entry: Omit<ImpactEntry, 'id' | 'createdAt'>) => {
     const newEntry: ImpactEntry = {
@@ -144,17 +196,41 @@ const Index = () => {
         <section>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-semibold text-foreground">Your Impact Log</h2>
-            <span className="text-sm text-muted-foreground">{entries.length} entries</span>
+            <span className="text-sm text-muted-foreground">
+              {hasActiveFilters ? `${filteredEntries.length} of ${entries.length}` : `${entries.length}`} entries
+            </span>
           </div>
 
           {entries.length === 0 ? (
             <EmptyState onAddClick={() => setIsAddingEntry(true)} />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {entries.map((entry, index) => (
-                <ImpactCard key={entry.id} entry={entry} index={index} />
-              ))}
-            </div>
+            <>
+              <FilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedTags={selectedTags}
+                onTagToggle={handleTagToggle}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                onClearFilters={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+              />
+              
+              {filteredEntries.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>No entries match your filters.</p>
+                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                    Clear filters
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredEntries.map((entry, index) => (
+                    <ImpactCard key={entry.id} entry={entry} index={index} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </section>
       </main>
