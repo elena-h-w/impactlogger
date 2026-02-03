@@ -1,14 +1,24 @@
 import { motion } from 'framer-motion';
-import { Shield, Sparkles } from 'lucide-react';
+import { Shield, Sparkles, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
 interface HeaderProps {
   onGenerateClick: () => void;
   hasEntries: boolean;
 }
+
 export function Header({
   onGenerateClick,
   hasEntries
 }: HeaderProps) {
+  const { signOut, user } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Signed out successfully');
+  };
   return <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <motion.div initial={{
@@ -33,12 +43,17 @@ export function Header({
       }} animate={{
         opacity: 1,
         x: 0
-      }}>
+      }} className="flex items-center gap-2">
           <Button onClick={onGenerateClick} disabled={!hasEntries} variant="outline" className="gap-2 hover:border-accent hover:text-accent transition-colors">
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">Generate Narrative</span>
             <span className="sm:hidden">Generate</span>
           </Button>
+          {user && (
+            <Button onClick={handleSignOut} variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          )}
         </motion.div>
       </div>
     </header>;
