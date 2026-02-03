@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      impact_entries: {
+        Row: {
+          created_at: string
+          evidence: string
+          id: string
+          problem_solved: string
+          tags: string[]
+          updated_at: string
+          user_id: string
+          week_of: string
+          what_you_did: string
+          who_benefited: string
+        }
+        Insert: {
+          created_at?: string
+          evidence: string
+          id?: string
+          problem_solved: string
+          tags?: string[]
+          updated_at?: string
+          user_id: string
+          week_of: string
+          what_you_did: string
+          who_benefited: string
+        }
+        Update: {
+          created_at?: string
+          evidence?: string
+          id?: string
+          problem_solved?: string
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+          week_of?: string
+          what_you_did?: string
+          who_benefited?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
