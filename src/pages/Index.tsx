@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Target, TrendingUp, Calendar, Tags } from 'lucide-react';
+import { Plus, Target, TrendingUp, Calendar, Tags, Loader2 } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { ImpactEntry, ImpactTag as ImpactTagType } from '@/types/impact';
 import { Header } from '@/components/Header';
@@ -11,43 +11,10 @@ import { EmptyState } from '@/components/EmptyState';
 import { GenerateNarrativeModal } from '@/components/GenerateNarrativeModal';
 import { FilterBar } from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
-
-// Sample data to showcase the app
-const sampleEntries: ImpactEntry[] = [
-  {
-    id: '1',
-    createdAt: new Date('2026-01-28'),
-    weekOf: new Date('2026-01-27'),
-    whatYouDid: 'Led the migration of authentication system to OAuth 2.0, reducing login failures by 40%',
-    whoBenefited: 'Engineering team, End users',
-    problemSolved: 'Eliminated legacy auth bottlenecks causing 2,000+ failed logins per week',
-    evidence: 'PR #1234, Datadog dashboard showing 40% reduction',
-    tags: ['efficiency', 'quality', 'leadership'],
-  },
-  {
-    id: '2',
-    createdAt: new Date('2026-01-21'),
-    weekOf: new Date('2026-01-20'),
-    whatYouDid: 'Identified and fixed a critical data sync issue before it affected Q4 reporting',
-    whoBenefited: 'Finance team, Executive leadership',
-    problemSolved: 'Prevented $2.3M in potential misreported revenue',
-    evidence: 'Incident postmortem doc, Finance team Slack acknowledgment',
-    tags: ['risk-reduction', 'quality'],
-  },
-  {
-    id: '3',
-    createdAt: new Date('2026-01-14'),
-    weekOf: new Date('2026-01-13'),
-    whatYouDid: 'Mentored two junior engineers through their first production deployments',
-    whoBenefited: 'Junior engineers, Team velocity',
-    problemSolved: 'Reduced onboarding time by 2 weeks per new hire',
-    evidence: '1:1 notes, deployment success metrics',
-    tags: ['leadership', 'alignment'],
-  },
-];
+import { useImpactEntries } from '@/hooks/useImpactEntries';
 
 const Index = () => {
-  const [entries, setEntries] = useState<ImpactEntry[]>(sampleEntries);
+  const { entries, isLoading, addEntry, deleteEntry, isAdding } = useImpactEntries();
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [isNarrativeModalOpen, setIsNarrativeModalOpen] = useState(false);
   
@@ -101,14 +68,13 @@ const Index = () => {
     });
   }, [entries, searchQuery, selectedTags, dateRange]);
 
-  const handleAddEntry = (entry: Omit<ImpactEntry, 'id' | 'createdAt'>) => {
-    const newEntry: ImpactEntry = {
-      ...entry,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
-    setEntries(prev => [newEntry, ...prev]);
+  const handleAddEntry = async (entry: Omit<ImpactEntry, 'id' | 'createdAt'>) => {
+    await addEntry(entry);
     setIsAddingEntry(false);
+  };
+
+  const handleDeleteEntry = async (id: string) => {
+    await deleteEntry(id);
   };
 
   // Calculate stats
@@ -127,6 +93,14 @@ const Index = () => {
   }, {} as Record<string, number>);
   
   const topTag = Object.entries(tagCounts).sort(([, a], [, b]) => b - a)[0]?.[0] as ImpactTagType | undefined;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -173,6 +147,7 @@ const Index = () => {
               <AddImpactForm
                 onSubmit={handleAddEntry}
                 onCancel={() => setIsAddingEntry(false)}
+                isSubmitting={isAdding}
               />
             </div>
           ) : (
@@ -226,7 +201,12 @@ const Index = () => {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {filteredEntries.map((entry, index) => (
-                    <ImpactCard key={entry.id} entry={entry} index={index} />
+                    <ImpactCard 
+                      key={entry.id} 
+                      entry={entry} 
+                      index={index}
+                      onDelete={() => handleDeleteEntry(entry.id)}
+                    />
                   ))}
                 </div>
               )}

@@ -1,33 +1,50 @@
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Calendar, Users, Lightbulb, FileText } from 'lucide-react';
+import { Calendar, Users, Lightbulb, FileText, Trash2 } from 'lucide-react';
 import { ImpactEntry } from '@/types/impact';
 import { ImpactTag } from './ImpactTag';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface ImpactCardProps {
   entry: ImpactEntry;
   index?: number;
+  onDelete?: () => void;
 }
 
-export function ImpactCard({ entry, index = 0 }: ImpactCardProps) {
+export function ImpactCard({ entry, index = 0, onDelete }: ImpactCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
     >
-      <Card className="group gradient-card shadow-card hover:shadow-hover transition-all duration-300 border border-border/50">
+      <Card className="group gradient-card shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 relative">
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>Week of {format(entry.weekOf, 'MMM d, yyyy')}</span>
             </div>
-            <div className="flex flex-wrap gap-1.5 justify-end">
-              {entry.tags.map((tag) => (
-                <ImpactTag key={tag} tag={tag} />
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap gap-1.5 justify-end">
+                {entry.tags.map((tag) => (
+                  <ImpactTag key={tag} tag={tag} />
+                ))}
+              </div>
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
           

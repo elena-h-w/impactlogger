@@ -12,9 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface AddImpactFormProps {
   onSubmit: (entry: Omit<ImpactEntry, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
-export function AddImpactForm({ onSubmit, onCancel }: AddImpactFormProps) {
+export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFormProps) {
   const [whatYouDid, setWhatYouDid] = useState('');
   const [whoBenefited, setWhoBenefited] = useState('');
   const [problemSolved, setProblemSolved] = useState('');
@@ -134,12 +135,12 @@ export function AddImpactForm({ onSubmit, onCancel }: AddImpactFormProps) {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="flex-1">
                 Cancel
               </Button>
-              <Button type="submit" className="flex-1 gradient-amber text-accent-foreground shadow-amber hover:opacity-90">
+              <Button type="submit" disabled={isSubmitting} className="flex-1 gradient-amber text-accent-foreground shadow-amber hover:opacity-90">
                 <Plus className="h-4 w-4 mr-2" />
-                Save Impact
+                {isSubmitting ? 'Saving...' : 'Save Impact'}
               </Button>
             </div>
           </form>
