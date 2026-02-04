@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Calendar, Users, Lightbulb, FileText, Trash2, Pencil, Check, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Users, Lightbulb, FileText, Trash2, Pencil, Check, X } from 'lucide-react';
 import { ImpactEntry, ImpactTag as ImpactTagType, IMPACT_TAG_CONFIG } from '@/types/impact';
 import { ImpactTag } from './ImpactTag';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 interface ImpactCardProps {
   entry: ImpactEntry;
@@ -20,6 +23,7 @@ interface ImpactCardProps {
 export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }: ImpactCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
+    weekOf: entry.weekOf,
     whatYouDid: entry.whatYouDid,
     whoBenefited: entry.whoBenefited,
     problemSolved: entry.problemSolved,
@@ -29,6 +33,7 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
 
   const handleEdit = () => {
     setEditData({
+      weekOf: entry.weekOf,
       whatYouDid: entry.whatYouDid,
       whoBenefited: entry.whoBenefited,
       problemSolved: entry.problemSolved,
@@ -46,7 +51,6 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
     if (!onUpdate) return;
     await onUpdate({
       id: entry.id,
-      weekOf: entry.weekOf,
       ...editData,
     });
     setIsEditing(false);
@@ -73,10 +77,30 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
         <Card className="gradient-card shadow-card border border-accent/30">
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>Week of {format(entry.weekOf, 'MMM d, yyyy')}</span>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "justify-start text-left font-normal h-8 text-sm",
+                      !editData.weekOf && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    Week of {format(editData.weekOf, 'MMM d, yyyy')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editData.weekOf}
+                    onSelect={(date) => date && setEditData(prev => ({ ...prev, weekOf: date }))}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
               <div className="flex gap-1">
                 <Button
                   variant="ghost"
@@ -163,7 +187,7 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
+              <CalendarIcon className="h-4 w-4" />
               <span>Week of {format(entry.weekOf, 'MMM d, yyyy')}</span>
             </div>
             <div className="flex items-center gap-2">
