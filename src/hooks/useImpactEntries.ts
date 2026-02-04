@@ -98,12 +98,44 @@ export function useImpactEntries() {
     },
   });
 
+  const updateEntry = useMutation({
+    mutationFn: async ({ id, ...entry }: Omit<ImpactEntry, 'createdAt'>) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { data, error } = await supabase
+        .from('impact_entries')
+        .update({
+          week_of: entry.weekOf.toISOString().split('T')[0],
+          what_you_did: entry.whatYouDid,
+          who_benefited: entry.whoBenefited,
+          problem_solved: entry.problemSolved,
+          evidence: entry.evidence,
+          tags: entry.tags,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return mapDbToEntry(data as DbImpactEntry);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['impact-entries'] });
+      toast.success('Entry updated!');
+    },
+    onError: (error) => {
+      toast.error('Failed to update: ' + error.message);
+    },
+  });
+
   return {
     entries,
     isLoading,
     error,
     addEntry: addEntry.mutateAsync,
     deleteEntry: deleteEntry.mutateAsync,
+    updateEntry: updateEntry.mutateAsync,
     isAdding: addEntry.isPending,
+    isUpdating: updateEntry.isPending,
   };
 }

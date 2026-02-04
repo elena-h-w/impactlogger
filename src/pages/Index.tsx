@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useImpactEntries } from '@/hooks/useImpactEntries';
 
 const Index = () => {
-  const { entries, isLoading, addEntry, deleteEntry, isAdding } = useImpactEntries();
+  const { entries, isLoading, addEntry, deleteEntry, updateEntry, isAdding, isUpdating } = useImpactEntries();
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [isNarrativeModalOpen, setIsNarrativeModalOpen] = useState(false);
   
@@ -75,6 +75,10 @@ const Index = () => {
 
   const handleDeleteEntry = async (id: string) => {
     await deleteEntry(id);
+  };
+
+  const handleUpdateEntry = async (entry: Omit<ImpactEntry, 'createdAt'>) => {
+    await updateEntry(entry);
   };
 
   // Calculate stats
@@ -206,6 +210,8 @@ const Index = () => {
                       entry={entry} 
                       index={index}
                       onDelete={() => handleDeleteEntry(entry.id)}
+                      onUpdate={handleUpdateEntry}
+                      isUpdating={isUpdating}
                     />
                   ))}
                 </div>
