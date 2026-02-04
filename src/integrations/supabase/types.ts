@@ -53,6 +53,39 @@ export type Database = {
         }
         Relationships: []
       }
+      stakeholders: {
+        Row: {
+          created_at: string
+          how_you_impacted: string
+          id: string
+          name: string
+          team: string
+          updated_at: string
+          user_id: string
+          what_they_care_about: string
+        }
+        Insert: {
+          created_at?: string
+          how_you_impacted?: string
+          id?: string
+          name: string
+          team?: string
+          updated_at?: string
+          user_id: string
+          what_they_care_about?: string
+        }
+        Update: {
+          created_at?: string
+          how_you_impacted?: string
+          id?: string
+          name?: string
+          team?: string
+          updated_at?: string
+          user_id?: string
+          what_they_care_about?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
