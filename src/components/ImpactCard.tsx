@@ -145,7 +145,7 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
               <Input
                 value={editData.problemSolved}
                 onChange={(e) => setEditData(prev => ({ ...prev, problemSolved: e.target.value }))}
-                placeholder="Problem solved?"
+                placeholder="Result / Why it matters?"
                 className="text-sm"
               />
             </div>
