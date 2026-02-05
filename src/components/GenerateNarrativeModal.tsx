@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Briefcase, ArrowUpRight, Copy, Check, Sparkles } from 'lucide-react';
-import { ImpactEntry, IMPACT_TAG_CONFIG } from '@/types/impact';
+import { ImpactEntry, IMPACT_TAG_CONFIG, ImpactTag } from '@/types/impact';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,39 +40,80 @@ const narrativeOptions: { type: NarrativeType; title: string; description: strin
   },
 ];
 
-function generateOutcomeBullet(entry: ImpactEntry): string {
-  // Transform entry into polished, outcome-focused bullet
+function extractOutcome(entry: ImpactEntry): string {
   const result = entry.problemSolved?.trim();
-  const beneficiary = entry.whoBenefited?.trim();
   const action = entry.whatYouDid?.trim();
-  
-  // Build a concise outcome-focused statement
-  if (result && beneficiary) {
-    return `Drove ${result.toLowerCase().replace(/^reduced|improved|increased|enabled/i, (m) => m.toLowerCase())} for ${beneficiary}`;
-  } else if (result) {
-    return `Delivered ${result.charAt(0).toLowerCase() + result.slice(1)}`;
-  } else if (action && beneficiary) {
-    return `${action} — enabling ${beneficiary} to operate more effectively`;
-  }
-  return action || '';
+  return result || action || '';
 }
 
-function groupEntriesByTheme(entries: ImpactEntry[]): Map<string, ImpactEntry[]> {
-  const themes = new Map<string, ImpactEntry[]>();
+function groupEntriesByTheme(entries: ImpactEntry[]): Map<string, { entries: ImpactEntry[]; label: string }> {
+  const themes = new Map<string, { entries: ImpactEntry[]; label: string }>();
   
   entries.forEach(entry => {
-    // Use primary tag as theme, or 'General' if no tags
-    const theme = entry.tags[0] 
-      ? IMPACT_TAG_CONFIG[entry.tags[0] as keyof typeof IMPACT_TAG_CONFIG]?.label || 'General'
-      : 'General';
+    const primaryTag = entry.tags[0] || 'general';
+    const label = IMPACT_TAG_CONFIG[primaryTag as ImpactTag]?.label || 
+      primaryTag.charAt(0).toUpperCase() + primaryTag.slice(1);
     
-    if (!themes.has(theme)) {
-      themes.set(theme, []);
+    if (!themes.has(primaryTag)) {
+      themes.set(primaryTag, { entries: [], label });
     }
-    themes.get(theme)!.push(entry);
+    themes.get(primaryTag)!.entries.push(entry);
   });
   
   return themes;
+}
+
+function getActionVerb(index: number): string {
+  const verbs = ['spearheaded', 'architected', 'orchestrated', 'transformed', 'pioneered', 'championed', 'accelerated', 'elevated'];
+  return verbs[index % verbs.length];
+}
+
+function buildOpeningParagraph(entries: ImpactEntry[], themes: Map<string, { entries: ImpactEntry[]; label: string }>): string {
+  const themeLabels = Array.from(themes.values()).map(t => t.label.toLowerCase());
+  const themeList = themeLabels.length > 2 
+    ? `${themeLabels.slice(0, -1).join(', ')}, and ${themeLabels[themeLabels.length - 1]}`
+    : themeLabels.join(' and ');
+  
+  const stakeholders = [...new Set(entries.map(e => e.whoBenefited).filter(Boolean))];
+  const stakeholderMention = stakeholders.length > 0 
+    ? ` with measurable impact across ${stakeholders.slice(0, 3).join(', ')}`
+    : '';
+  
+  return `This review period marked significant contributions spanning ${themeList}${stakeholderMention}. Through strategic initiative and consistent execution, meaningful outcomes were achieved that strengthened both immediate deliverables and long-term organizational capabilities.`;
+}
+
+function buildBodyParagraph(themeLabel: string, themeEntries: ImpactEntry[], paragraphIndex: number): string {
+  if (themeEntries.length === 0) return '';
+  
+  const verb = getActionVerb(paragraphIndex);
+  const outcomes = themeEntries.slice(0, 3).map(e => extractOutcome(e)).filter(Boolean);
+  const beneficiaries = [...new Set(themeEntries.map(e => e.whoBenefited).filter(Boolean))];
+  
+  let paragraph = `In the area of ${themeLabel.toLowerCase()}, `;
+  
+  if (outcomes.length === 1) {
+    paragraph += `efforts ${verb} ${outcomes[0].charAt(0).toLowerCase() + outcomes[0].slice(1)}`;
+  } else if (outcomes.length === 2) {
+    paragraph += `work ${verb} initiatives that ${outcomes[0].charAt(0).toLowerCase() + outcomes[0].slice(1)}, while also ${outcomes[1].charAt(0).toLowerCase() + outcomes[1].slice(1)}`;
+  } else if (outcomes.length >= 3) {
+    paragraph += `multiple initiatives were ${verb}ed: ${outcomes[0].charAt(0).toLowerCase() + outcomes[0].slice(1)}, ${outcomes[1].charAt(0).toLowerCase() + outcomes[1].slice(1)}, and ${outcomes[2].charAt(0).toLowerCase() + outcomes[2].slice(1)}`;
+  }
+  
+  if (beneficiaries.length > 0) {
+    paragraph += `. These efforts directly benefited ${beneficiaries.slice(0, 2).join(' and ')}, creating lasting value for the organization`;
+  }
+  
+  paragraph += '.';
+  return paragraph;
+}
+
+function buildClosingParagraph(entries: ImpactEntry[]): string {
+  const allStakeholders = [...new Set(entries.flatMap(e => e.whoBenefited ? [e.whoBenefited] : []))];
+  const collaborationNote = allStakeholders.length > 2
+    ? `demonstrated through partnerships with ${allStakeholders.slice(0, 3).join(', ')}`
+    : 'evident throughout each initiative';
+  
+  return `Cross-functional collaboration remained a consistent strength, ${collaborationNote}. The combination of technical execution and stakeholder alignment positions continued growth and expanded responsibility in the coming period. These contributions reflect readiness to take on increasingly complex challenges while maintaining the quality and impact demonstrated throughout this review cycle.`;
 }
 
 function generateNarrative(entries: ImpactEntry[], type: NarrativeType): string {
@@ -81,60 +122,38 @@ function generateNarrative(entries: ImpactEntry[], type: NarrativeType): string 
   }
 
   const themes = groupEntriesByTheme(entries);
-  const uniqueStakeholders = [...new Set(entries.map(e => e.whoBenefited).filter(Boolean))];
+  const sortedThemes = Array.from(themes.entries())
+    .sort((a, b) => b[1].entries.length - a[1].entries.length)
+    .slice(0, 3);
   
-  // Generate polished bullets grouped by theme
-  const themedBullets: string[] = [];
-  themes.forEach((themeEntries, themeName) => {
-    if (themeEntries.length >= 2) {
-      // Combine related entries into one stronger bullet
-      const combinedOutcomes = themeEntries
-        .slice(0, 2)
-        .map(e => e.problemSolved?.trim())
-        .filter(Boolean)
-        .join(' and ');
-      if (combinedOutcomes) {
-        themedBullets.push(`• ${themeName}: ${combinedOutcomes}`);
-      } else {
-        themedBullets.push(`• ${generateOutcomeBullet(themeEntries[0])}`);
-      }
-    } else {
-      themedBullets.push(`• ${generateOutcomeBullet(themeEntries[0])}`);
-    }
-  });
-
-  // Build individual outcome bullets for remaining entries
-  const individualBullets = entries
-    .slice(0, 6)
-    .map(generateOutcomeBullet)
-    .filter(b => b.length > 0)
-    .map(b => `• ${b}`);
+  const opening = buildOpeningParagraph(entries, themes);
+  const bodyParagraphs = sortedThemes
+    .map(([, theme], idx) => buildBodyParagraph(theme.label, theme.entries, idx))
+    .filter(Boolean)
+    .join('\n\n');
+  const closing = buildClosingParagraph(entries);
 
   if (type === 'review') {
-    return `## Performance Review Summary
-
-${individualBullets.join('\n')}
-
-**Cross-functional reach:** ${uniqueStakeholders.slice(0, 4).join(', ') || 'Multiple teams'}`;
+    return `## Performance Review Summary\n\n${opening}\n\n${bodyParagraphs}\n\n${closing}`;
   }
 
   if (type === 'promotion') {
-    return `## Promotion Case
-
-**Key contributions demonstrating readiness:**
-
-${individualBullets.join('\n')}
-
-**Scope of influence:** Delivered outcomes benefiting ${uniqueStakeholders.slice(0, 3).join(', ') || 'multiple stakeholders'}, demonstrating ability to operate at the next level.`;
+    const promotionOpening = opening.replace('This review period marked', 'This promotion case reflects');
+    const promotionClosing = closing.replace(
+      'positions continued growth and expanded responsibility',
+      'demonstrates clear readiness for promotion and the capacity to operate at the next level'
+    );
+    return `## Promotion Case\n\n${promotionOpening}\n\n${bodyParagraphs}\n\n${promotionClosing}`;
   }
 
-  return `## Role Transition Narrative
-
-**Demonstrated capabilities:**
-
-${individualBullets.join('\n')}
-
-**Transferable impact:** Built credibility across ${uniqueStakeholders.length || 'multiple'} stakeholder groups with documented, measurable outcomes.`;
+  // Role change narrative
+  const roleOpening = opening.replace(
+    'This review period marked significant contributions',
+    'A pattern of adaptability and transferable excellence emerges from recent contributions'
+  );
+  const roleClosing = `The breadth of experience across ${sortedThemes.map(([, t]) => t.label.toLowerCase()).join(', ')} demonstrates versatility that translates directly to new contexts. ${closing.replace('Cross-functional collaboration remained a consistent strength', 'Strong collaborative instincts')}`;
+  
+  return `## Role Transition Narrative\n\n${roleOpening}\n\n${bodyParagraphs}\n\n${roleClosing}`;
 }
 
 export function GenerateNarrativeModal({ open, onOpenChange, entries }: GenerateNarrativeModalProps) {
@@ -234,9 +253,9 @@ export function GenerateNarrativeModal({ open, onOpenChange, entries }: Generate
               ) : (
                 <>
                   <div className="bg-muted/50 rounded-lg p-4 mb-4 max-h-[300px] overflow-y-auto">
-                    <pre className="whitespace-pre-wrap text-sm font-mono text-foreground/90">
+                    <div className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
                       {generatedNarrative}
-                    </pre>
+                    </div>
                   </div>
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={handleBack} className="flex-1">
