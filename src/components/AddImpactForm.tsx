@@ -8,6 +8,25 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { z } from 'zod';
+import { toast } from 'sonner';
+
+const impactFormSchema = z.object({
+  whatYouDid: z.string()
+    .trim()
+    .min(1, 'This field is required')
+    .max(2000, 'Must be 2000 characters or less'),
+  whoBenefited: z.string()
+    .trim()
+    .max(500, 'Must be 500 characters or less'),
+  problemSolved: z.string()
+    .trim()
+    .max(500, 'Must be 500 characters or less'),
+  evidence: z.string()
+    .trim()
+    .max(1000, 'Must be 1000 characters or less'),
+  tags: z.array(z.string()).max(10, 'Maximum 10 tags allowed'),
+});
 
 interface AddImpactFormProps {
   onSubmit: (entry: Omit<ImpactEntry, 'id' | 'createdAt'>) => void;
@@ -21,6 +40,7 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
   const [problemSolved, setProblemSolved] = useState('');
   const [evidence, setEvidence] = useState('');
   const [selectedTags, setSelectedTags] = useState<ImpactTagType[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const toggleTag = (tag: ImpactTagType) => {
     setSelectedTags(prev => 
@@ -32,14 +52,36 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!whatYouDid.trim()) return;
-    
-    onSubmit({
-      weekOf: new Date(),
+    setErrors({});
+
+    const formData = {
       whatYouDid,
       whoBenefited,
       problemSolved,
       evidence,
+      tags: selectedTags,
+    };
+
+    const result = impactFormSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error('Please fix the validation errors');
+      return;
+    }
+
+    onSubmit({
+      weekOf: new Date(),
+      whatYouDid: result.data.whatYouDid,
+      whoBenefited: result.data.whoBenefited,
+      problemSolved: result.data.problemSolved,
+      evidence: result.data.evidence,
       tags: selectedTags,
     });
   };
@@ -77,8 +119,11 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
                 value={whatYouDid}
                 onChange={(e) => setWhatYouDid(e.target.value)}
                 className="min-h-[80px] resize-none"
-                required
+                maxLength={2000}
               />
+              {errors.whatYouDid && (
+                <p className="text-sm text-destructive">{errors.whatYouDid}</p>
+              )}
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
@@ -91,7 +136,11 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
                   placeholder="Engineering team, Product, Customers..."
                   value={whoBenefited}
                   onChange={(e) => setWhoBenefited(e.target.value)}
+                  maxLength={500}
                 />
+                {errors.whoBenefited && (
+                  <p className="text-sm text-destructive">{errors.whoBenefited}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -103,7 +152,11 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
                   placeholder="Reduced login failures by 40%, improving user retention..."
                   value={problemSolved}
                   onChange={(e) => setProblemSolved(e.target.value)}
+                  maxLength={500}
                 />
+                {errors.problemSolved && (
+                  <p className="text-sm text-destructive">{errors.problemSolved}</p>
+                )}
               </div>
             </div>
 
@@ -116,7 +169,11 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
                 placeholder="Link to PR, Slack thread, dashboard..."
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
+                maxLength={1000}
               />
+              {errors.evidence && (
+                <p className="text-sm text-destructive">{errors.evidence}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -132,6 +189,9 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
                   />
                 ))}
               </div>
+              {errors.tags && (
+                <p className="text-sm text-destructive">{errors.tags}</p>
+              )}
             </div>
 
             <div className="flex gap-3 pt-2">
