@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Target, TrendingUp, Calendar, Tags, Loader2 } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
-import { ImpactEntry, ImpactTag as ImpactTagType } from '@/types/impact';
+import { ImpactEntry, ImpactTag as ImpactTagType, AnyTag, IMPACT_TAG_CONFIG } from '@/types/impact';
 import { Header } from '@/components/Header';
 import { ImpactCard } from '@/components/ImpactCard';
 import { AddImpactForm } from '@/components/AddImpactForm';
@@ -20,12 +20,12 @@ const Index = () => {
   
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTags, setSelectedTags] = useState<ImpactTagType[]>([]);
+  const [selectedTags, setSelectedTags] = useState<AnyTag[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const hasActiveFilters = searchQuery.length > 0 || selectedTags.length > 0 || !!dateRange?.from;
 
-  const handleTagToggle = (tag: ImpactTagType) => {
+  const handleTagToggle = (tag: AnyTag) => {
     setSelectedTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
@@ -36,6 +36,13 @@ const Index = () => {
     setSelectedTags([]);
     setDateRange(undefined);
   };
+
+  // Get all custom tags from entries (tags not in IMPACT_TAG_CONFIG)
+  const defaultTagKeys = Object.keys(IMPACT_TAG_CONFIG) as ImpactTagType[];
+  const customTags = useMemo(() => {
+    const allTags = entries.flatMap(e => e.tags);
+    return [...new Set(allTags.filter(t => !defaultTagKeys.includes(t as ImpactTagType)))];
+  }, [entries]);
 
   // Filter entries
   const filteredEntries = useMemo(() => {
@@ -193,6 +200,7 @@ const Index = () => {
                 onDateRangeChange={setDateRange}
                 onClearFilters={clearFilters}
                 hasActiveFilters={hasActiveFilters}
+                customTags={customTags}
               />
               
               {filteredEntries.length === 0 ? (

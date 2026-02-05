@@ -7,8 +7,10 @@ export type ImpactTag =
   | 'alignment'
   | 'leadership'
   | 'visibility'
-  | 'engagement'
-  | 'influence';
+  | 'engagement';
+
+// Custom tags are stored as strings but not in this union type
+export type AnyTag = ImpactTag | string;
 
 export interface ImpactEntry {
   id: string;
@@ -18,7 +20,7 @@ export interface ImpactEntry {
   whoBenefited: string;
   problemSolved: string;
   evidence: string;
-  tags: ImpactTag[];
+  tags: AnyTag[];
 }
 
 export interface Stakeholder {
@@ -39,5 +41,18 @@ export const IMPACT_TAG_CONFIG: Record<ImpactTag, { label: string; color: string
   'leadership': { label: 'Leadership', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
   'visibility': { label: 'Visibility', color: 'bg-pink-500/10 text-pink-600 border-pink-500/20' },
   'engagement': { label: 'Engagement', color: 'bg-teal-500/10 text-teal-600 border-teal-500/20' },
-  'influence': { label: 'Influence', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' },
 };
+
+// Default color for custom tags
+export const CUSTOM_TAG_COLOR = 'bg-gray-500/10 text-gray-600 border-gray-500/20';
+
+export function getTagConfig(tag: AnyTag): { label: string; color: string } {
+  if (tag in IMPACT_TAG_CONFIG) {
+    return IMPACT_TAG_CONFIG[tag as ImpactTag];
+  }
+  // Custom tag - capitalize first letter
+  return {
+    label: tag.charAt(0).toUpperCase() + tag.slice(1),
+    color: CUSTOM_TAG_COLOR,
+  };
+}

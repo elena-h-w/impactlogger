@@ -3,7 +3,7 @@ import { Search, X, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ImpactTag as ImpactTagType, IMPACT_TAG_CONFIG } from '@/types/impact';
+import { ImpactTag as ImpactTagType, AnyTag, IMPACT_TAG_CONFIG } from '@/types/impact';
 import { ImpactTag } from './ImpactTag';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -13,15 +13,16 @@ import { DateRange } from 'react-day-picker';
 interface FilterBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  selectedTags: ImpactTagType[];
-  onTagToggle: (tag: ImpactTagType) => void;
+  selectedTags: AnyTag[];
+  onTagToggle: (tag: AnyTag) => void;
   dateRange: DateRange | undefined;
   onDateRangeChange: (range: DateRange | undefined) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
+  customTags?: string[];
 }
 
-const allTags: ImpactTagType[] = ['revenue', 'risk-reduction', 'speed', 'efficiency', 'quality', 'alignment', 'leadership'];
+const defaultTags: ImpactTagType[] = ['revenue', 'risk-reduction', 'speed', 'efficiency', 'quality', 'alignment', 'leadership', 'visibility', 'engagement'];
 
 export function FilterBar({
   searchQuery,
@@ -32,8 +33,12 @@ export function FilterBar({
   onDateRangeChange,
   onClearFilters,
   hasActiveFilters,
+  customTags = [],
 }: FilterBarProps) {
   const [isDateOpen, setIsDateOpen] = useState(false);
+  
+  // Combine default tags with custom tags
+  const allTags: AnyTag[] = [...defaultTags, ...customTags.filter(t => !defaultTags.includes(t as ImpactTagType))];
 
   const formatDateRange = () => {
     if (!dateRange?.from) return 'Select dates';
