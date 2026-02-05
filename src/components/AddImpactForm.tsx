@@ -96,11 +96,11 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
 
               <div className="space-y-2">
                 <Label htmlFor="problemSolved" className="text-sm font-medium">
-                  What problem did it solve?
+                  What was the result? Why does it matter?
                 </Label>
                 <Input
                   id="problemSolved"
-                  placeholder="Reduced login failures by 40%..."
+                  placeholder="Reduced login failures by 40%, improving user retention..."
                   value={problemSolved}
                   onChange={(e) => setProblemSolved(e.target.value)}
                 />

@@ -40,72 +40,101 @@ const narrativeOptions: { type: NarrativeType; title: string; description: strin
   },
 ];
 
+function generateOutcomeBullet(entry: ImpactEntry): string {
+  // Transform entry into polished, outcome-focused bullet
+  const result = entry.problemSolved?.trim();
+  const beneficiary = entry.whoBenefited?.trim();
+  const action = entry.whatYouDid?.trim();
+  
+  // Build a concise outcome-focused statement
+  if (result && beneficiary) {
+    return `Drove ${result.toLowerCase().replace(/^reduced|improved|increased|enabled/i, (m) => m.toLowerCase())} for ${beneficiary}`;
+  } else if (result) {
+    return `Delivered ${result.charAt(0).toLowerCase() + result.slice(1)}`;
+  } else if (action && beneficiary) {
+    return `${action} — enabling ${beneficiary} to operate more effectively`;
+  }
+  return action || '';
+}
+
+function groupEntriesByTheme(entries: ImpactEntry[]): Map<string, ImpactEntry[]> {
+  const themes = new Map<string, ImpactEntry[]>();
+  
+  entries.forEach(entry => {
+    // Use primary tag as theme, or 'General' if no tags
+    const theme = entry.tags[0] 
+      ? IMPACT_TAG_CONFIG[entry.tags[0] as keyof typeof IMPACT_TAG_CONFIG]?.label || 'General'
+      : 'General';
+    
+    if (!themes.has(theme)) {
+      themes.set(theme, []);
+    }
+    themes.get(theme)!.push(entry);
+  });
+  
+  return themes;
+}
+
 function generateNarrative(entries: ImpactEntry[], type: NarrativeType): string {
   if (entries.length === 0) {
-    return "No impact entries found. Start capturing your wins to generate narratives!";
+    return "No impact entries found. Start capturing your wins to generate narratives.";
   }
 
-  const tagCounts = entries.reduce((acc, entry) => {
-    entry.tags.forEach(tag => {
-      acc[tag] = (acc[tag] || 0) + 1;
-    });
-    return acc;
-  }, {} as Record<string, number>);
+  const themes = groupEntriesByTheme(entries);
+  const uniqueStakeholders = [...new Set(entries.map(e => e.whoBenefited).filter(Boolean))];
+  
+  // Generate polished bullets grouped by theme
+  const themedBullets: string[] = [];
+  themes.forEach((themeEntries, themeName) => {
+    if (themeEntries.length >= 2) {
+      // Combine related entries into one stronger bullet
+      const combinedOutcomes = themeEntries
+        .slice(0, 2)
+        .map(e => e.problemSolved?.trim())
+        .filter(Boolean)
+        .join(' and ');
+      if (combinedOutcomes) {
+        themedBullets.push(`• ${themeName}: ${combinedOutcomes}`);
+      } else {
+        themedBullets.push(`• ${generateOutcomeBullet(themeEntries[0])}`);
+      }
+    } else {
+      themedBullets.push(`• ${generateOutcomeBullet(themeEntries[0])}`);
+    }
+  });
 
-  const topTags = Object.entries(tagCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3)
-    .map(([tag]) => IMPACT_TAG_CONFIG[tag as keyof typeof IMPACT_TAG_CONFIG].label);
-
-  const bullets = entries.slice(0, 5).map(e => `• ${e.whatYouDid}`).join('\n');
+  // Build individual outcome bullets for remaining entries
+  const individualBullets = entries
+    .slice(0, 6)
+    .map(generateOutcomeBullet)
+    .filter(b => b.length > 0)
+    .map(b => `• ${b}`);
 
   if (type === 'review') {
     return `## Performance Review Summary
 
-**Key Impact Areas:** ${topTags.join(', ')}
+${individualBullets.join('\n')}
 
-**Highlights from this period:**
-
-${bullets}
-
-**Quantified Impact:**
-- Contributed to ${entries.length} documented wins
-- Benefited stakeholders across: ${[...new Set(entries.map(e => e.whoBenefited))].slice(0, 3).join(', ')}
-
-This summary represents concrete, evidence-based contributions with documented outcomes.`;
+**Cross-functional reach:** ${uniqueStakeholders.slice(0, 4).join(', ') || 'Multiple teams'}`;
   }
 
   if (type === 'promotion') {
     return `## Promotion Case
 
-**Demonstrated Competencies:** ${topTags.join(', ')}
+**Key contributions demonstrating readiness:**
 
-**Evidence of Next-Level Performance:**
+${individualBullets.join('\n')}
 
-${bullets}
-
-**Leadership & Influence:**
-- Consistently delivered impact across ${Object.keys(tagCounts).length} different areas
-- ${entries.length} documented contributions with measurable outcomes
-- Stakeholder impact spanning multiple teams
-
-This promotion case is built on documented evidence, not self-assessment.`;
+**Scope of influence:** Delivered outcomes benefiting ${uniqueStakeholders.slice(0, 3).join(', ') || 'multiple stakeholders'}, demonstrating ability to operate at the next level.`;
   }
 
   return `## Role Transition Narrative
 
-**Transferable Strengths:** ${topTags.join(', ')}
+**Demonstrated capabilities:**
 
-**Demonstrated Capabilities:**
+${individualBullets.join('\n')}
 
-${bullets}
-
-**Why I'm Ready:**
-- Proven track record with ${entries.length} documented wins
-- Cross-functional impact touching: ${[...new Set(entries.map(e => e.whoBenefited))].slice(0, 3).join(', ')}
-- Evidence-based record of delivering results
-
-This narrative is grounded in actual work, not aspirational statements.`;
+**Transferable impact:** Built credibility across ${uniqueStakeholders.length || 'multiple'} stakeholder groups with documented, measurable outcomes.`;
 }
 
 export function GenerateNarrativeModal({ open, onOpenChange, entries }: GenerateNarrativeModalProps) {

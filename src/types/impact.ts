@@ -5,7 +5,10 @@ export type ImpactTag =
   | 'efficiency'
   | 'quality'
   | 'alignment'
-  | 'leadership';
+  | 'leadership'
+  | 'visibility'
+  | 'engagement'
+  | 'influence';
 
 export interface ImpactEntry {
   id: string;
@@ -34,4 +37,7 @@ export const IMPACT_TAG_CONFIG: Record<ImpactTag, { label: string; color: string
   'quality': { label: 'Quality', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20' },
   'alignment': { label: 'Alignment', color: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20' },
   'leadership': { label: 'Leadership', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
+  'visibility': { label: 'Visibility', color: 'bg-pink-500/10 text-pink-600 border-pink-500/20' },
+  'engagement': { label: 'Engagement', color: 'bg-teal-500/10 text-teal-600 border-teal-500/20' },
+  'influence': { label: 'Influence', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' },
 };
