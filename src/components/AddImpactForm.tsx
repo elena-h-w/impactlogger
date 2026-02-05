@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Sparkles } from 'lucide-react';
-import { ImpactTag as ImpactTagType, IMPACT_TAG_CONFIG, ImpactEntry } from '@/types/impact';
+import { ImpactTag as ImpactTagType, AnyTag, IMPACT_TAG_CONFIG, ImpactEntry } from '@/types/impact';
 import { ImpactTag } from './ImpactTag';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,15 +39,24 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
   const [whoBenefited, setWhoBenefited] = useState('');
   const [problemSolved, setProblemSolved] = useState('');
   const [evidence, setEvidence] = useState('');
-  const [selectedTags, setSelectedTags] = useState<ImpactTagType[]>([]);
+  const [selectedTags, setSelectedTags] = useState<AnyTag[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const toggleTag = (tag: ImpactTagType) => {
+  const toggleTag = (tag: AnyTag) => {
     setSelectedTags(prev => 
       prev.includes(tag) 
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
+  };
+
+  const handleAddCustomTag = () => {
+    const trimmed = newTagInput.trim().toLowerCase();
+    if (trimmed && !selectedTags.includes(trimmed)) {
+      setSelectedTags(prev => [...prev, trimmed]);
+      setNewTagInput('');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -87,6 +96,9 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
   };
 
   const allTags = Object.keys(IMPACT_TAG_CONFIG) as ImpactTagType[];
+  
+  // Custom tags that were added by user
+  const customTags = selectedTags.filter(t => !allTags.includes(t as ImpactTagType));
 
   return (
     <motion.div
@@ -188,6 +200,40 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
                     selected={selectedTags.includes(tag)}
                   />
                 ))}
+                {customTags.map((tag) => (
+                  <ImpactTag
+                    key={tag}
+                    tag={tag}
+                    size="md"
+                    onClick={() => toggleTag(tag)}
+                    selected={selectedTags.includes(tag)}
+                  />
+                ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  placeholder="Add custom tag..."
+                  className="text-sm h-9 flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomTag();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={handleAddCustomTag}
+                  disabled={!newTagInput.trim()}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
               </div>
               {errors.tags && (
                 <p className="text-sm text-destructive">{errors.tags}</p>

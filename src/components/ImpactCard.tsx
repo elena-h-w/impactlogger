@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Users, Lightbulb, FileText, Trash2, Pencil, Check, X } from 'lucide-react';
-import { ImpactEntry, ImpactTag as ImpactTagType, IMPACT_TAG_CONFIG } from '@/types/impact';
+import { Calendar as CalendarIcon, Users, Lightbulb, FileText, Trash2, Pencil, Check, X, Plus } from 'lucide-react';
+import { ImpactEntry, ImpactTag as ImpactTagType, AnyTag, IMPACT_TAG_CONFIG } from '@/types/impact';
 import { ImpactTag } from './ImpactTag';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface ImpactCardProps {
   entry: ImpactEntry;
@@ -22,13 +33,14 @@ interface ImpactCardProps {
 
 export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }: ImpactCardProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [newTagInput, setNewTagInput] = useState('');
   const [editData, setEditData] = useState({
     weekOf: entry.weekOf,
     whatYouDid: entry.whatYouDid,
     whoBenefited: entry.whoBenefited,
     problemSolved: entry.problemSolved,
     evidence: entry.evidence,
-    tags: [...entry.tags],
+    tags: [...entry.tags] as AnyTag[],
   });
 
   const handleEdit = () => {
@@ -38,13 +50,14 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
       whoBenefited: entry.whoBenefited,
       problemSolved: entry.problemSolved,
       evidence: entry.evidence,
-      tags: [...entry.tags],
+      tags: [...entry.tags] as AnyTag[],
     });
     setIsEditing(true);
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    setNewTagInput('');
   };
 
   const handleSave = async () => {
@@ -54,9 +67,10 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
       ...editData,
     });
     setIsEditing(false);
+    setNewTagInput('');
   };
 
-  const toggleTag = (tag: ImpactTagType) => {
+  const toggleTag = (tag: AnyTag) => {
     setEditData(prev => ({
       ...prev,
       tags: prev.tags.includes(tag)
@@ -65,7 +79,21 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
     }));
   };
 
+  const handleAddCustomTag = () => {
+    const trimmed = newTagInput.trim().toLowerCase();
+    if (trimmed && !editData.tags.includes(trimmed)) {
+      setEditData(prev => ({
+        ...prev,
+        tags: [...prev.tags, trimmed],
+      }));
+      setNewTagInput('');
+    }
+  };
+
   const allTags = Object.keys(IMPACT_TAG_CONFIG) as ImpactTagType[];
+  
+  // Get custom tags that are on this entry but not in default config
+  const customTagsOnEntry = editData.tags.filter(t => !allTags.includes(t as ImpactTagType));
 
   if (isEditing) {
     return (
@@ -170,6 +198,39 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
                   selected={editData.tags.includes(tag)}
                 />
               ))}
+              {customTagsOnEntry.map((tag) => (
+                <ImpactTag
+                  key={tag}
+                  tag={tag}
+                  size="sm"
+                  onClick={() => toggleTag(tag)}
+                  selected={editData.tags.includes(tag)}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Input
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                placeholder="Add custom tag..."
+                className="text-sm h-8 flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCustomTag();
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={handleAddCustomTag}
+                disabled={!newTagInput.trim()}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -210,17 +271,35 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
                 </Button>
               )}
               {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this impact entry?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this impact entry from your log.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={onDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
           </div>

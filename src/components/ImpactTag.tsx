@@ -1,15 +1,15 @@
-import { ImpactTag as ImpactTagType, IMPACT_TAG_CONFIG } from '@/types/impact';
+import { AnyTag, getTagConfig } from '@/types/impact';
 import { cn } from '@/lib/utils';
 
 interface ImpactTagProps {
-  tag: ImpactTagType;
+  tag: AnyTag;
   size?: 'sm' | 'md';
   onClick?: () => void;
   selected?: boolean;
 }
 
 export function ImpactTag({ tag, size = 'sm', onClick, selected }: ImpactTagProps) {
-  const config = IMPACT_TAG_CONFIG[tag];
+  const config = getTagConfig(tag);
   
   return (
     <span
