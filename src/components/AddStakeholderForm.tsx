@@ -7,6 +7,24 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { z } from 'zod';
+import { toast } from 'sonner';
+
+const stakeholderFormSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, 'Name is required')
+    .max(200, 'Name must be 200 characters or less'),
+  team: z.string()
+    .trim()
+    .max(200, 'Team must be 200 characters or less'),
+  whatTheyCareAbout: z.string()
+    .trim()
+    .max(1000, 'Must be 1000 characters or less'),
+  howYouImpacted: z.string()
+    .trim()
+    .max(1000, 'Must be 1000 characters or less'),
+});
 
 interface AddStakeholderFormProps {
   onSubmit: (stakeholder: Omit<Stakeholder, 'id'>) => void;
@@ -19,16 +37,38 @@ export function AddStakeholderForm({ onSubmit, onCancel, isSubmitting }: AddStak
   const [team, setTeam] = useState('');
   const [whatTheyCareAbout, setWhatTheyCareAbout] = useState('');
   const [howYouImpacted, setHowYouImpacted] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    
-    onSubmit({
+    setErrors({});
+
+    const formData = {
       name,
       team,
       whatTheyCareAbout,
       howYouImpacted,
+    };
+
+    const result = stakeholderFormSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error('Please fix the validation errors');
+      return;
+    }
+
+    onSubmit({
+      name: result.data.name,
+      team: result.data.team,
+      whatTheyCareAbout: result.data.whatTheyCareAbout,
+      howYouImpacted: result.data.howYouImpacted,
     });
   };
 
@@ -63,8 +103,11 @@ export function AddStakeholderForm({ onSubmit, onCancel, isSubmitting }: AddStak
                   placeholder="Sarah Chen"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  required
+                  maxLength={200}
                 />
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -76,7 +119,11 @@ export function AddStakeholderForm({ onSubmit, onCancel, isSubmitting }: AddStak
                   placeholder="Engineering, Product, Leadership..."
                   value={team}
                   onChange={(e) => setTeam(e.target.value)}
+                  maxLength={200}
                 />
+                {errors.team && (
+                  <p className="text-sm text-destructive">{errors.team}</p>
+                )}
               </div>
             </div>
 
@@ -90,7 +137,11 @@ export function AddStakeholderForm({ onSubmit, onCancel, isSubmitting }: AddStak
                 value={whatTheyCareAbout}
                 onChange={(e) => setWhatTheyCareAbout(e.target.value)}
                 className="min-h-[80px] resize-none"
+                maxLength={1000}
               />
+              {errors.whatTheyCareAbout && (
+                <p className="text-sm text-destructive">{errors.whatTheyCareAbout}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -103,7 +154,11 @@ export function AddStakeholderForm({ onSubmit, onCancel, isSubmitting }: AddStak
                 value={howYouImpacted}
                 onChange={(e) => setHowYouImpacted(e.target.value)}
                 className="min-h-[80px] resize-none"
+                maxLength={1000}
               />
+              {errors.howYouImpacted && (
+                <p className="text-sm text-destructive">{errors.howYouImpacted}</p>
+              )}
             </div>
 
             <div className="flex gap-3 pt-2">
