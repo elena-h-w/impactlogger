@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Briefcase, ArrowUpRight, Copy, Check, Sparkles } from 'lucide-react';
-import { ImpactEntry, IMPACT_TAG_CONFIG, ImpactTag } from '@/types/impact';
+import { FileText, Briefcase, ArrowUpRight, Copy, Check, Sparkles, Target, Users, Zap, Scale } from 'lucide-react';
+import { ImpactEntry } from '@/types/impact';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,14 +10,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { 
+  generateNarrative, 
+  NarrativeType, 
+  NarrativeTone, 
+  TONE_CONFIG 
+} from '@/lib/narrativeGenerator';
 
 interface GenerateNarrativeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entries: ImpactEntry[];
 }
-
-type NarrativeType = 'review' | 'promotion' | 'role-change';
 
 const narrativeOptions: { type: NarrativeType; title: string; description: string; icon: React.ReactNode }[] = [
   {
@@ -29,7 +33,7 @@ const narrativeOptions: { type: NarrativeType; title: string; description: strin
   {
     type: 'promotion',
     title: 'Promotion Case',
-    description: 'Evidence-based bullets showcasing leadership, growth, and organizational impact.',
+    description: 'Evidence-based narrative showcasing leadership, growth, and organizational impact.',
     icon: <ArrowUpRight className="h-5 w-5" />,
   },
   {
@@ -40,136 +44,36 @@ const narrativeOptions: { type: NarrativeType; title: string; description: strin
   },
 ];
 
-function extractOutcome(entry: ImpactEntry): string {
-  const result = entry.problemSolved?.trim();
-  const action = entry.whatYouDid?.trim();
-  return result || action || '';
-}
-
-function groupEntriesByTheme(entries: ImpactEntry[]): Map<string, { entries: ImpactEntry[]; label: string }> {
-  const themes = new Map<string, { entries: ImpactEntry[]; label: string }>();
-  
-  entries.forEach(entry => {
-    const primaryTag = entry.tags[0] || 'general';
-    const label = IMPACT_TAG_CONFIG[primaryTag as ImpactTag]?.label || 
-      primaryTag.charAt(0).toUpperCase() + primaryTag.slice(1);
-    
-    if (!themes.has(primaryTag)) {
-      themes.set(primaryTag, { entries: [], label });
-    }
-    themes.get(primaryTag)!.entries.push(entry);
-  });
-  
-  return themes;
-}
-
-function getActionVerb(index: number): string {
-  const verbs = ['spearheaded', 'architected', 'orchestrated', 'transformed', 'pioneered', 'championed', 'accelerated', 'elevated'];
-  return verbs[index % verbs.length];
-}
-
-function buildOpeningParagraph(entries: ImpactEntry[], themes: Map<string, { entries: ImpactEntry[]; label: string }>): string {
-  const themeLabels = Array.from(themes.values()).map(t => t.label.toLowerCase());
-  const themeList = themeLabels.length > 2 
-    ? `${themeLabels.slice(0, -1).join(', ')}, and ${themeLabels[themeLabels.length - 1]}`
-    : themeLabels.join(' and ');
-  
-  const stakeholders = [...new Set(entries.map(e => e.whoBenefited).filter(Boolean))];
-  const stakeholderMention = stakeholders.length > 0 
-    ? ` with measurable impact across ${stakeholders.slice(0, 3).join(', ')}`
-    : '';
-  
-  return `This review period marked significant contributions spanning ${themeList}${stakeholderMention}. Through strategic initiative and consistent execution, meaningful outcomes were achieved that strengthened both immediate deliverables and long-term organizational capabilities.`;
-}
-
-function buildBodyParagraph(themeLabel: string, themeEntries: ImpactEntry[], paragraphIndex: number): string {
-  if (themeEntries.length === 0) return '';
-  
-  const verb = getActionVerb(paragraphIndex);
-  const outcomes = themeEntries.slice(0, 3).map(e => extractOutcome(e)).filter(Boolean);
-  const beneficiaries = [...new Set(themeEntries.map(e => e.whoBenefited).filter(Boolean))];
-  
-  let paragraph = `In the area of ${themeLabel.toLowerCase()}, `;
-  
-  if (outcomes.length === 1) {
-    paragraph += `efforts ${verb} ${outcomes[0].charAt(0).toLowerCase() + outcomes[0].slice(1)}`;
-  } else if (outcomes.length === 2) {
-    paragraph += `work ${verb} initiatives that ${outcomes[0].charAt(0).toLowerCase() + outcomes[0].slice(1)}, while also ${outcomes[1].charAt(0).toLowerCase() + outcomes[1].slice(1)}`;
-  } else if (outcomes.length >= 3) {
-    paragraph += `multiple initiatives were ${verb}ed: ${outcomes[0].charAt(0).toLowerCase() + outcomes[0].slice(1)}, ${outcomes[1].charAt(0).toLowerCase() + outcomes[1].slice(1)}, and ${outcomes[2].charAt(0).toLowerCase() + outcomes[2].slice(1)}`;
-  }
-  
-  if (beneficiaries.length > 0) {
-    paragraph += `. These efforts directly benefited ${beneficiaries.slice(0, 2).join(' and ')}, creating lasting value for the organization`;
-  }
-  
-  paragraph += '.';
-  return paragraph;
-}
-
-function buildClosingParagraph(entries: ImpactEntry[]): string {
-  const allStakeholders = [...new Set(entries.flatMap(e => e.whoBenefited ? [e.whoBenefited] : []))];
-  const collaborationNote = allStakeholders.length > 2
-    ? `demonstrated through partnerships with ${allStakeholders.slice(0, 3).join(', ')}`
-    : 'evident throughout each initiative';
-  
-  return `Cross-functional collaboration remained a consistent strength, ${collaborationNote}. The combination of technical execution and stakeholder alignment positions continued growth and expanded responsibility in the coming period. These contributions reflect readiness to take on increasingly complex challenges while maintaining the quality and impact demonstrated throughout this review cycle.`;
-}
-
-function generateNarrative(entries: ImpactEntry[], type: NarrativeType): string {
-  if (entries.length === 0) {
-    return "No impact entries found. Start capturing your wins to generate narratives.";
-  }
-
-  const themes = groupEntriesByTheme(entries);
-  const sortedThemes = Array.from(themes.entries())
-    .sort((a, b) => b[1].entries.length - a[1].entries.length)
-    .slice(0, 3);
-  
-  const opening = buildOpeningParagraph(entries, themes);
-  const bodyParagraphs = sortedThemes
-    .map(([, theme], idx) => buildBodyParagraph(theme.label, theme.entries, idx))
-    .filter(Boolean)
-    .join('\n\n');
-  const closing = buildClosingParagraph(entries);
-
-  if (type === 'review') {
-    return `## Performance Review Summary\n\n${opening}\n\n${bodyParagraphs}\n\n${closing}`;
-  }
-
-  if (type === 'promotion') {
-    const promotionOpening = opening.replace('This review period marked', 'This promotion case reflects');
-    const promotionClosing = closing.replace(
-      'positions continued growth and expanded responsibility',
-      'demonstrates clear readiness for promotion and the capacity to operate at the next level'
-    );
-    return `## Promotion Case\n\n${promotionOpening}\n\n${bodyParagraphs}\n\n${promotionClosing}`;
-  }
-
-  // Role change narrative
-  const roleOpening = opening.replace(
-    'This review period marked significant contributions',
-    'A pattern of adaptability and transferable excellence emerges from recent contributions'
-  );
-  const roleClosing = `The breadth of experience across ${sortedThemes.map(([, t]) => t.label.toLowerCase()).join(', ')} demonstrates versatility that translates directly to new contexts. ${closing.replace('Cross-functional collaboration remained a consistent strength', 'Strong collaborative instincts')}`;
-  
-  return `## Role Transition Narrative\n\n${roleOpening}\n\n${bodyParagraphs}\n\n${roleClosing}`;
-}
+const toneOptions: { tone: NarrativeTone; icon: React.ReactNode }[] = [
+  { tone: 'results', icon: <Target className="h-4 w-4" /> },
+  { tone: 'leadership', icon: <Users className="h-4 w-4" /> },
+  { tone: 'technical', icon: <Zap className="h-4 w-4" /> },
+  { tone: 'balanced', icon: <Scale className="h-4 w-4" /> },
+];
 
 export function GenerateNarrativeModal({ open, onOpenChange, entries }: GenerateNarrativeModalProps) {
   const [selectedType, setSelectedType] = useState<NarrativeType | null>(null);
+  const [selectedTone, setSelectedTone] = useState<NarrativeTone>('balanced');
   const [generatedNarrative, setGeneratedNarrative] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [step, setStep] = useState<'type' | 'tone' | 'result'>('type');
 
-  const handleGenerate = async (type: NarrativeType) => {
+  const handleSelectType = (type: NarrativeType) => {
     setSelectedType(type);
-    setIsGenerating(true);
+    setStep('tone');
+  };
+
+  const handleGenerate = async () => {
+    if (!selectedType) return;
     
-    // Simulate AI generation delay
+    setIsGenerating(true);
+    setStep('result');
+    
+    // Simulate generation delay
     await new Promise(resolve => setTimeout(resolve, 1200));
     
-    const narrative = generateNarrative(entries, type);
+    const narrative = generateNarrative(entries, selectedType, selectedTone);
     setGeneratedNarrative(narrative);
     setIsGenerating(false);
   };
@@ -183,16 +87,35 @@ export function GenerateNarrativeModal({ open, onOpenChange, entries }: Generate
   };
 
   const handleBack = () => {
-    setSelectedType(null);
-    setGeneratedNarrative(null);
+    if (step === 'result') {
+      setStep('tone');
+      setGeneratedNarrative(null);
+    } else if (step === 'tone') {
+      setStep('type');
+      setSelectedType(null);
+    }
   };
 
   const handleClose = () => {
     onOpenChange(false);
     setTimeout(() => {
       setSelectedType(null);
+      setSelectedTone('balanced');
       setGeneratedNarrative(null);
+      setStep('type');
     }, 200);
+  };
+
+  const getStepTitle = () => {
+    if (step === 'type') return 'Generate Narrative';
+    if (step === 'tone') return 'Choose Your Tone';
+    return 'Your Narrative';
+  };
+
+  const getStepDescription = () => {
+    if (step === 'type') return 'Transform your impact log into compelling narratives for key career moments.';
+    if (step === 'tone') return 'Select the emphasis that best matches your audience and goals.';
+    return 'Based on your captured impact, here\'s your evidence-based narrative.';
   };
 
   return (
@@ -201,19 +124,15 @@ export function GenerateNarrativeModal({ open, onOpenChange, entries }: Generate
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent" />
-            {selectedType ? 'Your Narrative' : 'Generate Narrative'}
+            {getStepTitle()}
           </DialogTitle>
-          <DialogDescription>
-            {selectedType 
-              ? 'Based on your captured impact, here\'s your evidence-based narrative.'
-              : 'Transform your impact log into compelling narratives for key career moments.'}
-          </DialogDescription>
+          <DialogDescription>{getStepDescription()}</DialogDescription>
         </DialogHeader>
 
         <AnimatePresence mode="wait">
-          {!selectedType ? (
+          {step === 'type' && (
             <motion.div
-              key="options"
+              key="type"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -222,7 +141,7 @@ export function GenerateNarrativeModal({ open, onOpenChange, entries }: Generate
               {narrativeOptions.map((option) => (
                 <button
                   key={option.type}
-                  onClick={() => handleGenerate(option.type)}
+                  onClick={() => handleSelectType(option.type)}
                   className="flex items-start gap-4 p-4 text-left rounded-lg border border-border hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 group"
                 >
                   <div className="p-2 rounded-md bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
@@ -235,9 +154,60 @@ export function GenerateNarrativeModal({ open, onOpenChange, entries }: Generate
                 </button>
               ))}
             </motion.div>
-          ) : (
+          )}
+
+          {step === 'tone' && (
             <motion.div
-              key="narrative"
+              key="tone"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-4 space-y-4"
+            >
+              <div className="grid gap-2">
+                {toneOptions.map((option) => {
+                  const config = TONE_CONFIG[option.tone];
+                  const isSelected = selectedTone === option.tone;
+                  return (
+                    <button
+                      key={option.tone}
+                      onClick={() => setSelectedTone(option.tone)}
+                      className={`flex items-center gap-3 p-3 text-left rounded-lg border transition-all duration-200 ${
+                        isSelected
+                          ? 'border-accent bg-accent/10'
+                          : 'border-border hover:border-accent/50 hover:bg-accent/5'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-md transition-colors ${
+                        isSelected ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {option.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-foreground">{config.label}</h4>
+                        <p className="text-xs text-muted-foreground">{config.description}</p>
+                      </div>
+                      {isSelected && (
+                        <Check className="h-4 w-4 text-accent" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={handleBack} className="flex-1">
+                  Back
+                </Button>
+                <Button onClick={handleGenerate} className="flex-1 gradient-amber text-accent-foreground">
+                  Generate Narrative
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'result' && (
+            <motion.div
+              key="result"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -259,7 +229,7 @@ export function GenerateNarrativeModal({ open, onOpenChange, entries }: Generate
                   </div>
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={handleBack} className="flex-1">
-                      Generate Another
+                      Change Tone
                     </Button>
                     <Button onClick={handleCopy} className="flex-1 gradient-amber text-accent-foreground">
                       {copied ? (
