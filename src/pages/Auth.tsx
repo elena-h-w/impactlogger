@@ -56,13 +56,8 @@ export default function Auth() {
     setIsLoading(false);
     
     if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid email or password. Please try again.');
-      } else if (error.message.includes('Email not confirmed')) {
-        toast.error('Please confirm your email before signing in.');
-      } else {
-        toast.error(error.message);
-      }
+      // Use generic error message to prevent account enumeration attacks
+      toast.error('Unable to sign in. Please check your credentials and try again.');
     } else {
       toast.success('Welcome back!');
       navigate('/');
