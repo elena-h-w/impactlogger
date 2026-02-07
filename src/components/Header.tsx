@@ -41,7 +41,7 @@ export function Header({
               <Shield className="h-5 w-5 text-accent-foreground" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-foreground">Reputation Builder</h1>
+              <h1 className="text-lg font-bold text-foreground">Impact Logger</h1>
               <p className="text-xs text-muted-foreground -mt-0.5">Your private evidence system</p>
             </div>
           </Link>
