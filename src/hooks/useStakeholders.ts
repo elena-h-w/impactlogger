@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Stakeholder } from '@/types/impact';
 import { toast } from 'sonner';
+import { sanitizeError, ErrorMessages } from '@/lib/errorUtils';
 
 interface DbStakeholder {
   id: string;
@@ -69,7 +70,8 @@ export function useStakeholders() {
       toast.success('Stakeholder added!');
     },
     onError: (error) => {
-      toast.error('Failed to add stakeholder: ' + error.message);
+      sanitizeError(error, 'adding stakeholder');
+      toast.error(ErrorMessages.SAVE_FAILED);
     },
   });
 
@@ -97,7 +99,8 @@ export function useStakeholders() {
       toast.success('Stakeholder updated!');
     },
     onError: (error) => {
-      toast.error('Failed to update: ' + error.message);
+      sanitizeError(error, 'updating stakeholder');
+      toast.error(ErrorMessages.UPDATE_FAILED);
     },
   });
 
@@ -115,7 +118,8 @@ export function useStakeholders() {
       toast.success('Stakeholder removed');
     },
     onError: (error) => {
-      toast.error('Failed to delete: ' + error.message);
+      sanitizeError(error, 'deleting stakeholder');
+      toast.error(ErrorMessages.DELETE_FAILED);
     },
   });
 

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ImpactEntry, ImpactTag } from '@/types/impact';
 import { toast } from 'sonner';
+import { sanitizeError, ErrorMessages } from '@/lib/errorUtils';
 
 interface DbImpactEntry {
   id: string;
@@ -76,7 +77,8 @@ export function useImpactEntries() {
       toast.success('Impact entry saved!');
     },
     onError: (error) => {
-      toast.error('Failed to save entry: ' + error.message);
+      sanitizeError(error, 'saving impact entry');
+      toast.error(ErrorMessages.SAVE_FAILED);
     },
   });
 
@@ -94,7 +96,8 @@ export function useImpactEntries() {
       toast.success('Entry deleted');
     },
     onError: (error) => {
-      toast.error('Failed to delete: ' + error.message);
+      sanitizeError(error, 'deleting impact entry');
+      toast.error(ErrorMessages.DELETE_FAILED);
     },
   });
 
@@ -124,7 +127,8 @@ export function useImpactEntries() {
       toast.success('Entry updated!');
     },
     onError: (error) => {
-      toast.error('Failed to update: ' + error.message);
+      sanitizeError(error, 'updating impact entry');
+      toast.error(ErrorMessages.UPDATE_FAILED);
     },
   });
 
