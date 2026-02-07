@@ -77,11 +77,10 @@ export default function Auth() {
     setIsLoading(false);
     
     if (error) {
-      if (error.message.includes('User already registered')) {
-        toast.error('An account with this email already exists. Please sign in instead.');
-      } else {
-        toast.error(error.message);
-      }
+      // Use generic error message to prevent account enumeration attacks
+      // Never reveal whether an account exists or not
+      console.error('[signup]', error);
+      toast.error('Unable to create account. Please try again or sign in if you already have an account.');
     } else {
       toast.success('Check your email to confirm your account!');
     }
