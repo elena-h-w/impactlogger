@@ -1,73 +1,85 @@
-# Welcome to your Lovable project
+# Impact Logger
 
-## Project info
+AI-powered narrative system for structured impact tracking.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## Live Demo
+🔗 [impactlogger.vercel.app](https://impactlogger.vercel.app)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## Overview
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Impact Logger explores how structured performance logs can be transformed into clear, executive-ready narratives using LLM workflows.
 
-Changes made via Lovable will be committed automatically to this repo.
+The project began as a prototype built with Lovable, then evolved into a custom implementation using the Anthropic Claude API, GitHub, and Vercel for deployment.
 
-**Use your preferred IDE**
+The core question:  
+Can structured inputs produce consistently high-quality professional narratives without excessive inference cost?
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Problem
 
-Follow these steps:
+Traditional impact tracking is fragmented and difficult to translate into performance-ready language.  
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Professionals lose promotions and raises because they can't articulate their impact effectively.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Naïve single-pass LLM prompts often:
+- Over-copy raw inputs
+- Lack abstraction
+- Produce generic output
+- Increase inference cost without improving quality
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Approach
 
-**Edit a file directly in GitHub**
+- Designed structured input fields to guide narrative abstraction
+- Iterated from one-shot prompting to multi-step refinement logic
+- Moved from Lovable prototype to custom Claude API integration
+- Secured API key using Vercel serverless functions (prevents client-side exposure)
+- Deployed via Vercel with environment-secured API keys
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Key Insights
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- LLM output quality is highly dependent on input structure
+- Multi-step abstraction improves narrative clarity
+- Inference cost becomes a real product constraint at scale
+- AI features require thoughtful system design, not just prompt engineering
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## Stack
 
-- Vite
-- TypeScript
 - React
-- shadcn-ui
+- TypeScript
+- Vite
 - Tailwind CSS
+- Supabase (authentication & database)
+- Anthropic Claude API
+- Vercel (serverless functions & deployment)
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## What I Would Improve Next
 
-## Can I connect a custom domain to my Lovable project?
+- Introduce caching layer to reduce repeated inference cost
+- Explore smaller model variants for cost-performance balance
+- Add structured tagging to improve narrative prioritization
+- Experiment with streaming responses for UX improvement
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Why This Project Matters
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project deepened my understanding of:
+- AI product architecture
+- Model economics
+- Workflow design
+- The intersection of product, GTM, and technical implementation
+
+It reflects my interest in AI-native product marketing and hands-on experimentation.
