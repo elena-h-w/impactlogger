@@ -53,6 +53,16 @@ Naïve single-pass LLM prompts often:
 
 ---
 
+## Architecture & Iteration
+
+- Migrated from a Lovable-managed Supabase instance to a self-managed Supabase project for backend ownership.
+- Implemented Row Level Security (RLS) to enforce per-user data isolation.
+- Added database triggers to maintain `updated_at` integrity automatically.
+- Separated client-safe Supabase keys from server-only Claude API credentials.
+- Re-evaluated inference cost tradeoffs when scaling narrative generation.
+
+---
+
 ## Stack
 
 - React
