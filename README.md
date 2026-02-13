@@ -2,94 +2,62 @@
 
 AI-powered narrative system for structured impact tracking.
 
----
-
-## Live Demo
-🔗 [impactlogger.vercel.app](https://impactlogger.vercel.app)
+🔗 Live Demo: https://impactlogger.vercel.app
 
 ---
 
 ## Overview
 
-Impact Logger explores how structured performance logs can be transformed into clear, executive-ready narratives using LLM workflows.
+Impact Logger explores how AI can help professionals articulate their impact more clearly — particularly in performance reviews, promotion cases, and role transitions.
 
-The project began as a prototype built with Lovable, then evolved into a custom implementation using the Anthropic Claude API, GitHub, and Vercel for deployment.
+The project began as a fast prototype built via Lovable to test whether structured inputs could meaningfully improve LLM output quality. After validating the idea, I rebuilt the core workflow using Claude API, Supabase, and Vercel to better understand how AI systems behave under real-world constraints.
 
-The core question:  
-Can structured inputs produce consistently high-quality professional narratives without excessive inference cost?
+The core question:
 
----
-
-## Problem
-
-Traditional impact tracking is fragmented and difficult to translate into performance-ready language.  
-
-Professionals lose promotions and raises because they can't articulate their impact effectively.
-
-Naïve single-pass LLM prompts often:
-- Over-copy raw inputs
-- Lack abstraction
-- Produce generic output
-- Increase inference cost without improving quality
+Can structured workflow design make AI outputs more valuable — not just more fluent?
 
 ---
 
-## Approach
+## The Problem
 
-- Designed structured input fields to guide narrative abstraction
-- Iterated from one-shot prompting to multi-step refinement logic
-- Moved from Lovable prototype to custom Claude API integration
-- Secured API key using Vercel serverless functions (prevents client-side exposure)
-- Deployed via Vercel with environment-secured API keys
+Many professionals struggle to translate weekly work into compelling, executive-ready narratives.
 
----
+Even with AI tools, outputs often:
+- Sound generic
+- Repeat inputs without abstraction
+- Lack strategic framing
+- Increase token usage without improving clarity
 
-## Key Insights
-
-- LLM output quality is highly dependent on input structure
-- Multi-step abstraction improves narrative clarity
-- Inference cost becomes a real product constraint at scale
-- AI features require thoughtful system design, not just prompt engineering
+This suggested that the bottleneck wasn’t model capability — it was system design and input structure.
 
 ---
 
-## Architecture & Iteration
+## What I Built
 
-- Migrated from a Lovable-managed Supabase instance to a self-managed Supabase project for backend ownership.
-- Implemented Row Level Security (RLS) to enforce per-user data isolation.
-- Added database triggers to maintain `updated_at` integrity automatically.
-- Separated client-safe Supabase keys from server-only Claude API credentials.
-- Re-evaluated inference cost tradeoffs when scaling narrative generation.
+Impact Logger allows users to:
 
----
+- Log weekly impact in structured fields
+- Store entries securely with per-user data isolation
+- Generate tailored narratives (performance review, promotion, or role change)
+- Experiment with tone and positioning
 
-## Stack
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- Supabase (authentication & database)
-- Anthropic Claude API
-- Vercel (serverless functions & deployment)
+The narrative generation runs server-side through Claude API to maintain key security and allow tighter control over inference behavior.
 
 ---
 
-## What I Would Improve Next
+## What I Learned
 
-- Introduce caching layer to reduce repeated inference cost
-- Explore smaller model variants for cost-performance balance
-- Add structured tagging to improve narrative prioritization
-- Experiment with streaming responses for UX improvement
+- AI output quality improves significantly when inputs are structured intentionally.
+- Prompt engineering alone is insufficient — workflow design matters.
+- Cost and latency become real product constraints once prototypes move into production.
+- Responsible AI products require backend ownership, not just frontend experimentation.
 
 ---
 
 ## Why This Project Matters
 
-This project deepened my understanding of:
-- AI product architecture
-- Model economics
-- Workflow design
-- The intersection of product, GTM, and technical implementation
+Impact Logger reflects my interest in bridging AI systems with real business workflows.
 
-It reflects my interest in AI-native product marketing and hands-on experimentation.
+As a marketing leader, I don’t just want to talk about AI adoption — I want to understand how AI products behave under constraints: cost, security, usability, and measurable value.
+
+This project represents that hands-on exploration.
