@@ -73,7 +73,7 @@ export function GenerateNarrativeModal({ open, onOpenChange, entries }: Generate
     // Simulate generation delay
     await new Promise(resolve => setTimeout(resolve, 1200));
     
-    const narrative = generateNarrative(entries, selectedType, selectedTone);
+    const narrative = await generateNarrative(entries, selectedType, selectedTone);
     setGeneratedNarrative(narrative);
     setIsGenerating(false);
   };

@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword"; // NEW: Add this import
 import Stakeholders from "./pages/Stakeholders";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            {/* NEW: Add reset password route */}
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/"
               element={
