@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useCustomTags } from '@/hooks/useCustomTags';
 
 interface ImpactCardProps {
   entry: ImpactEntry;
@@ -32,6 +33,7 @@ interface ImpactCardProps {
 }
 
 export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }: ImpactCardProps) {
+  const { customTags, addCustomTag } = useCustomTags();
   const [isEditing, setIsEditing] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [editData, setEditData] = useState({
@@ -86,14 +88,18 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
         ...prev,
         tags: [...prev.tags, trimmed],
       }));
+      addCustomTag(trimmed); // persist to Supabase
       setNewTagInput('');
     }
   };
 
   const allTags = Object.keys(IMPACT_TAG_CONFIG) as ImpactTagType[];
   
-  // Get custom tags that are on this entry but not in default config
-  const customTagsOnEntry = editData.tags.filter(t => !allTags.includes(t as ImpactTagType));
+  // Show ALL user's custom tags, plus any on this entry not yet saved
+  const allCustomTags = [...new Set([
+  ...customTags,
+  ...editData.tags.filter(t => !allTags.includes(t as ImpactTagType))
+  ])];
 
   if (isEditing) {
     return (
@@ -198,7 +204,7 @@ export function ImpactCard({ entry, index = 0, onDelete, onUpdate, isUpdating }:
                   selected={editData.tags.includes(tag)}
                 />
               ))}
-              {customTagsOnEntry.map((tag) => (
+              {allCustomTags.map((tag) => (
                 <ImpactTag
                   key={tag}
                   tag={tag}

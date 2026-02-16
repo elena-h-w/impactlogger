@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useCustomTags } from '@/hooks/useCustomTags';
 
 const impactFormSchema = z.object({
   whatYouDid: z.string()
@@ -42,6 +43,7 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
   const [selectedTags, setSelectedTags] = useState<AnyTag[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { customTags: savedCustomTags, addCustomTag } = useCustomTags();
 
   const toggleTag = (tag: AnyTag) => {
     setSelectedTags(prev => 
@@ -52,12 +54,13 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
   };
 
   const handleAddCustomTag = () => {
-    const trimmed = newTagInput.trim().toLowerCase();
-    if (trimmed && !selectedTags.includes(trimmed)) {
-      setSelectedTags(prev => [...prev, trimmed]);
-      setNewTagInput('');
-    }
-  };
+  const trimmed = newTagInput.trim().toLowerCase();
+  if (trimmed && !selectedTags.includes(trimmed)) {
+    setSelectedTags(prev => [...prev, trimmed]);
+    addCustomTag(trimmed); // persist to Supabase
+    setNewTagInput('');
+  }
+};
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,8 +100,11 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
 
   const allTags = Object.keys(IMPACT_TAG_CONFIG) as ImpactTagType[];
   
-  // Custom tags that were added by user
-  const customTags = selectedTags.filter(t => !allTags.includes(t as ImpactTagType));
+  // Merge saved custom tags with any new ones added in this session
+  const allCustomTags = [...new Set([
+  ...savedCustomTags,
+  ...selectedTags.filter(t => !allTags.includes(t as ImpactTagType)),
+])];
 
   return (
     <motion.div
@@ -200,7 +206,7 @@ export function AddImpactForm({ onSubmit, onCancel, isSubmitting }: AddImpactFor
                     selected={selectedTags.includes(tag)}
                   />
                 ))}
-                {customTags.map((tag) => (
+                {allCustomTags.map((tag) => (
                   <ImpactTag
                     key={tag}
                     tag={tag}
