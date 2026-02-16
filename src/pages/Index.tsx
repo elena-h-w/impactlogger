@@ -12,6 +12,7 @@ import { GenerateNarrativeModal } from '@/components/GenerateNarrativeModal';
 import { FilterBar } from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import { useImpactEntries } from '@/hooks/useImpactEntries';
+import { ImpactInsights } from '@/components/ImpactInsights';
 
 const Index = () => {
   const { entries, isLoading, addEntry, deleteEntry, updateEntry, isAdding, isUpdating } = useImpactEntries();
@@ -150,6 +151,13 @@ const Index = () => {
             index={3}
           />
         </div>
+
+         {/* Impact Insights */}
+        {entries.length >= 2 && (
+          <div className="mb-8">
+            <ImpactInsights entries={entries} />
+          </div>
+        )}
 
         {/* Add Entry Section */}
         <AnimatePresence mode="wait">
