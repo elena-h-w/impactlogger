@@ -1,4 +1,5 @@
 import { ImpactEntry } from '@/types/impact';
+import { supabase } from '@/integrations/supabase/client';
 
 export type NarrativeType = 'review' | 'promotion' | 'role-change';
 export type NarrativeTone = 'results' | 'leadership' | 'technical' | 'balanced';
@@ -22,10 +23,9 @@ export const TONE_CONFIG: Record<NarrativeTone, { label: string; description: st
   },
 };
 
-// Get API URL based on environment
 const API_URL = import.meta.env.PROD 
-  ? '/api/generate-narrative'  // Production (deployed)
-  : 'http://localhost:3000/api/generate-narrative';  // Local Vercel dev
+  ? '/api/generate-narrative'
+  : 'http://localhost:3000/api/generate-narrative';
 
 export async function generateNarrative(
   analyzedEntries: ImpactEntry[],
@@ -33,10 +33,17 @@ export async function generateNarrative(
   tone: NarrativeTone
 ): Promise<string> {
   try {
+    // Get the current user's session token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error('You must be logged in to generate narratives.');
+    }
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
         impacts: analyzedEntries,
@@ -44,6 +51,10 @@ export async function generateNarrative(
         tone: tone
       })
     });
+
+    if (response.status === 429) {
+      throw new Error('Daily limit reached (5 per day). Try again tomorrow!');
+    }
 
     if (!response.ok) {
       const error = await response.json();
@@ -59,7 +70,6 @@ export async function generateNarrative(
   }
 }
 
-// Keep these for backwards compatibility
 export async function generateReviewNarrative(
   analyzedEntries: ImpactEntry[],
   tone: NarrativeTone

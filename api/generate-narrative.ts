@@ -1,5 +1,54 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
+
+const DAILY_LIMIT = 5;
+const MAX_IMPACTS = 20;
+
+// Supabase admin client (uses service role key to bypass RLS)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
+// Verify the user's JWT and return their user ID
+async function authenticateUser(req: VercelRequest): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.replace('Bearer ', '');
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) return null;
+  return data.user.id;
+}
+
+// Check if user has exceeded daily limit
+async function checkRateLimit(userId: string): Promise<{ allowed: boolean; used: number }> {
+  const supabase = getSupabaseAdmin();
+
+  // Count today's usage
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const { count, error } = await supabase
+    .from('narrative_usage')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', todayStart.toISOString());
+
+  const used = count || 0;
+  return { allowed: used < DAILY_LIMIT, used };
+}
+
+// Record a usage
+async function recordUsage(userId: string) {
+  const supabase = getSupabaseAdmin();
+  await supabase.from('narrative_usage').insert({ user_id: userId });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -8,33 +57,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
   );
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    // 1. Authenticate user
+    const userId = await authenticateUser(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+    }
+
+    // 2. Check rate limit
+    const { allowed, used } = await checkRateLimit(userId);
+    if (!allowed) {
+      return res.status(429).json({
+        error: `Daily limit reached (${DAILY_LIMIT} per day). Try again tomorrow.`,
+        used,
+        limit: DAILY_LIMIT,
+      });
+    }
+
     const { impacts, type, tone } = req.body;
 
     if (!impacts || !type || !tone) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Initialize Anthropic with secret key from environment
+    // 3. Cap input size
+    const cappedImpacts = Array.isArray(impacts) ? impacts.slice(0, MAX_IMPACTS) : [];
+    if (cappedImpacts.length === 0) {
+      return res.status(400).json({ error: 'No impacts provided' });
+    }
+
+    // Initialize Anthropic
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY!,
     });
 
     // Format impacts for prompt
-    const impactsText = impacts.map((entry: any, index: number) => {
+    const impactsText = cappedImpacts.map((entry: any, index: number) => {
       const tags = entry.tags?.join(', ') || 'None';
       const stakeholders = entry.stakeholders?.join(', ') || 'None';
       
@@ -48,7 +117,6 @@ Impact #${index + 1}:
 `;
     }).join('\n');
 
-    // Get tone description
     const toneDescriptions: Record<string, string> = {
       'results': 'Emphasizes metrics, outcomes, and business impact',
       'leadership': 'Highlights influence, strategy, and team development',
@@ -58,7 +126,6 @@ Impact #${index + 1}:
 
     const toneDesc = toneDescriptions[tone] || toneDescriptions['balanced'];
 
-    // Build prompt based on type
     let prompt = '';
     let maxTokens = 1000;
 
@@ -129,7 +196,7 @@ TONE: ${toneDesc}
 Focus on WHY the person deserves promotion NOW, not just what they accomplished.
 
 Write ONLY the narrative, no preamble or explanation.`;
-    } else { // role-change
+    } else {
       prompt = `You are writing a role-change narrative showcasing transferable skills and adaptability.
 
 IMPACTS:
@@ -171,6 +238,9 @@ Write ONLY the narrative, no preamble or explanation.`;
         content: prompt
       }]
     });
+
+    // 4. Record usage AFTER successful generation
+    await recordUsage(userId);
 
     const content = message.content[0];
     if (content.type === 'text') {
