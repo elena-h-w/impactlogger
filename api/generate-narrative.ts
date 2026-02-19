@@ -239,6 +239,31 @@ Write ONLY the narrative, no preamble or explanation.`;
       }]
     });
 
+    // --- Extract token usage ---
+const inputTokens = message.usage?.input_tokens || 0;
+const outputTokens = message.usage?.output_tokens || 0;
+const totalTokens = inputTokens + outputTokens;
+
+// --- Claude Sonnet pricing (update if needed) ---
+const INPUT_COST_PER_1K = 0.003; 
+const OUTPUT_COST_PER_1K = 0.015; 
+
+const cost =
+  (inputTokens / 1000) * INPUT_COST_PER_1K +
+  (outputTokens / 1000) * OUTPUT_COST_PER_1K;
+
+  // --- Log generation analytics ---
+const supabase = getSupabaseAdmin();
+
+await supabase.from('generations').insert({
+  user_id: userId,
+  model: 'claude-sonnet-4-20250514',
+  input_tokens: inputTokens,
+  output_tokens: outputTokens,
+  total_tokens: totalTokens,
+  cost_usd: cost,
+});
+
     // 4. Record usage AFTER successful generation
     await recordUsage(userId);
 

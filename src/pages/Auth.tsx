@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import posthog from '@/lib/posthog';
 
 type Mode = 'signin' | 'signup';
 
@@ -90,6 +91,12 @@ export default function Auth() {
       return;
     }
 
+    // Identify user in PostHog
+    const { data: { user: signedInUser } } = await supabase.auth.getUser();
+    if (signedInUser) {
+      posthog.identify(signedInUser.id, { email: signedInUser.email });
+    }
+
     toast.success('Welcome back!');
     navigate('/');
   };
@@ -109,6 +116,7 @@ export default function Auth() {
       return;
     }
 
+    posthog.capture('user_signed_up');
     toast.success('Check your email to confirm your account!');
   };
 
