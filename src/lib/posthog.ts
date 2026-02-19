@@ -1,7 +1,12 @@
-import posthog from 'posthog-js'
+import posthog from 'posthog-js';
 
-posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
-  api_host: 'https://app.posthog.com',
-})
+const key = import.meta.env.VITE_POSTHOG_KEY;
 
-export default posthog
+if (key) {
+  posthog.init(key, {
+    api_host: 'https://us.posthog.com',
+    person_profiles: 'identified_only',
+  });
+}
+
+export default posthog;
