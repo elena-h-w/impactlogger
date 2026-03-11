@@ -231,9 +231,8 @@ Write ONLY the narrative, no preamble or explanation.`;
 
     // Call Claude API
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6-20260218',
+      model: 'claude-sonnet-4-5-20250514',
       max_tokens: maxTokens,
-      thinking: { type: 'disabled' },
       messages: [{
         role: 'user',
         content: prompt
@@ -258,7 +257,7 @@ const supabase = getSupabaseAdmin();
 
 await supabase.from('generations').insert({
   user_id: userId,
-  model: 'claude-sonnet-4-6-20260218',
+  model: 'claude-sonnet-4-5-20250514',
   input_tokens: inputTokens,
   output_tokens: outputTokens,
   total_tokens: totalTokens,
