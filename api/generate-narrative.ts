@@ -233,7 +233,7 @@ Write ONLY the narrative, no preamble or explanation.`;
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6-20260218',
       max_tokens: maxTokens,
-      thinking: { type: 'adaptive', effort: 'low' },
+      thinking: { type: 'disabled' },
       messages: [{
         role: 'user',
         content: prompt
